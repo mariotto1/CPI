@@ -69,5 +69,4 @@ def reduce_to_sim_05(sim, order):
     sim = numpy.insert(sim, sim.shape[1] - 2, [numpy.nan] * sim.shape[0], axis=1)
     sim = numpy.insert(sim, sim.shape[1] - 2, [[0] * sim.shape[0] for n in range(dim)], axis=1)
     sim = numpy.insert(sim, sim.shape[1] - 2, [numpy.nan] * sim.shape[0], axis=1)
-    print 'aa'
     return sim
