@@ -24,7 +24,7 @@ def stack_sims(sims):
 def calculate_score(preds, labels):
     score = {'FP': 0, 'FN': 0, 'Corretti': 0, 'Danno sbagliato': 0}
     for damage in conf.damage_types:
-        score['errori ' + damage] = 0
+        score['Errori ' + damage] = 0
     for pred, label in zip(preds, labels):
         if pred == 0 and label > 0:
             score['FN'] += 1
@@ -71,7 +71,7 @@ def save_global_score(scores):
     for score in scores:
         for key in global_score:
             global_score[key] += score[key]
-    global_score['Accuratezza'] = float(global_score['Corretti']) / (global_score['N'] + global_score['Positivi']) * 100
+    global_score['Accuratezza'] = float(global_score['Corretti']) / (global_score['Negativi'] + global_score['Positivi']) * 100
     global_score['FPR'] = float(global_score['FP']) / global_score['Negativi'] * 100
     global_score['FNR'] = float(global_score['FN']) / global_score['Positivi'] * 100
     global_score['Rateo Danno sbagliato'] = float(global_score['Danno sbagliato']) / global_score['Positivi'] * 100

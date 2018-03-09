@@ -11,12 +11,10 @@ def clean(data, min_order):
         sim = numpy.delete(sim, delete_indexes, axis=1)  # rimuove colonne inutili
         if damage:
             if conf.window_size > 0:
-                sim = sim[sim[:, -1] != 1]  # rimuove istanze positive
-                if sum(sim[:, -1]) > 0:
-                    sim[:, -1] /= 2
-                else:
-                    sim[:, -1] = [0] * (sim.shape[0] - conf.window_size * 60) + [1] * conf.window_size * 60
-            else:
+                len_transitory = numpy.count_nonzero(sim[:, -1] == 2) if 0 < numpy.count_nonzero(sim[:, -1] == 2) < conf.window_size * 60 else conf.window_size * 60
+                sim = sim[sim[:, -1] != 1]  # rimuove spettri con danno
+                sim[:, -1] = [0] * (sim.shape[0] - len_transitory) + [1] * len_transitory
+            elif 2 in sim[:, -1]:
                 sim[:, -1] = [0] * (sim.shape[0] - numpy.count_nonzero(sim[:, -1] == 1)) + [1] * numpy.count_nonzero(sim[:, -1] == 1)
             for damage in conf.damage_types:
                 if damage in name:
@@ -34,7 +32,7 @@ def normalization(train, test):
     return scaler.fit_transform(train), scaler.transform(test)
 
 
-def batch_generator(examples, lengths, window_size, batch_size):
+def batch_generator(examples, lengths, look_back, batch_size):
     num_classes = len(set(examples[:, -1]))
     sim_offset = 0
     global_offset = 0
@@ -44,13 +42,13 @@ def batch_generator(examples, lengths, window_size, batch_size):
         batch_data = []
         for i in range(batch_size):
             offset = global_offset + sim_offset
-            batch_data.append(examples[offset:offset + window_size, :-1])
+            batch_data.append(examples[offset:offset + look_back, :-1])
             batch_labels.append(keras.utils.np_utils.to_categorical(
-                max(examples[offset:offset + window_size, -1]),
+                max(examples[offset:offset + look_back, -1]),
                 num_classes=num_classes
             ))
             sim_offset += 1
-            if sim_offset + window_size >= lengths[lengths_index]:
+            if sim_offset + look_back >= lengths[lengths_index]:
                 global_offset += lengths[lengths_index]
                 lengths_index += 1
                 sim_offset = 0
