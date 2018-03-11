@@ -4,7 +4,7 @@ import os
 import sys
 import scipy.misc as smp
 import math
-import conf
+import configuration as conf
 
 
 def import_mats(path, orders=[]):

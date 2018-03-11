@@ -4,7 +4,7 @@ import keras as kr
 import numpy
 import utils
 import preprocessing
-import conf
+import configuration as conf
 
 
 def mlp(train, test):
@@ -20,7 +20,8 @@ def mlp(train, test):
     sgd = kr.optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9)
     model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
-    model.fit(train[:, :-1], kr.utils.np_utils.to_categorical(train[:, -1]), epochs=1, batch_size=conf.batch_size, shuffle=True)
+    model.fit(train[:, :-1], kr.utils.np_utils.to_categorical(train[:, -1]), epochs=conf.epoch, batch_size=conf.batch_size,
+              shuffle=True)
 
     confidences = model.predict(test[:, :-1], batch_size=128)
     predictions = [numpy.argmax(x) for x in confidences]
@@ -40,7 +41,7 @@ def lstm(train, train_lengths, test, test_lengths):
 
     model.fit_generator(preprocessing.batch_generator(train, train_lengths, conf.look_back, conf.batch_size),
                         steps_per_epoch=utils.samples_per_epoch(conf.look_back, train_lengths) / conf.batch_size,
-                        epochs=1)
+                        epochs=conf.epoch)
 
     generator = preprocessing.batch_generator(test, test_lengths, conf.look_back, conf.batch_size)
     test_labels = []

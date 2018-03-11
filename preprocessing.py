@@ -1,9 +1,9 @@
 import numpy
-import conf
+import configuration as conf
 from sklearn import preprocessing
 import keras
 
-
+# Remove of unnecessary orders and modify labels for multidamage and prediction
 def clean(data, min_order):
     sims, labels = [], []
     for name, damage, sim in data:  # tupla = tripla (nome,danno,sim)

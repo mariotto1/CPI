@@ -5,9 +5,20 @@ import classifiers as clf
 import datetime as dt
 import numpy
 import preprocessing
-import conf
+import configuration as conf
 from sklearn.model_selection import StratifiedKFold
 import cProfile
+
+
+def load_dataset():
+    for folder in os.listdir(conf.path_data):
+        component_folder = conf.path_data + folder
+        if conf.component == 'tutti cuscinetti' or folder == conf.component:
+            if os.path.isdir(component_folder + "/Test/"):
+                test_data.extend(utils.import_mats(component_folder + "/Test/", orders))
+                conf.separated_test = True
+            data.extend(utils.import_mats(component_folder + '/No_Danno/', orders))
+        data.extend(utils.import_mats(component_folder + '/Danno/', orders))
 
 
 def run():
@@ -24,23 +35,15 @@ if len(sys.argv) < 4:
     print "Usage: main.py classifier component target [prediction window size]"
 elif conf.classification == 'prediction':
     if len(sys.argv) < 5:
-        print "Prediction window size needed for predicting"
+        print "Prediction window size needed if predicting"
         exit(0)
     else:
         conf.window_size = int(sys.argv[4])
 conf.results_path = '/'.join(["risultati", conf.classifier, conf.classification, conf.component])
 
-orders, data, test_data = [], [], []  # dati = lista di triple (nome, danno si/no, sim)
-for folder in os.listdir(conf.path_data):
-    component_folder = conf.path_data + folder
-    if conf.component == 'tutti cuscinetti' or folder == conf.component:
-        if os.path.isdir(component_folder + "/Test/"):
-            test_data.extend(utils.import_mats(component_folder + "/Test/", orders))
-            conf.separated_test = True
-        data.extend(utils.import_mats(component_folder + '/No_Danno/', orders))
-    data.extend(utils.import_mats(component_folder + '/Danno/', orders))
+orders, data, test_data = [], [], []  # data = list of tuples (name, damage yes/no, sim)
+load_dataset()
 
-# eliminazione ordini non necessari e modifica label per multidanno e prediction
 sims, sims_labels = preprocessing.clean(data, min(orders))
 if conf.separated_test:
     test_sims, _ = preprocessing.clean(test_data, min(orders))
@@ -54,7 +57,7 @@ if conf.separated_test:
     train[:, :-1], test[:, :-1] = preprocessing.normalization(train[:, :-1], test[:, :-1])
     scores.append(run())
 else:
-    skf = StratifiedKFold(n_splits=5)  # numero di fold
+    skf = StratifiedKFold(n_splits=5)  # number of folds
     for train_indexes, test_indexes in skf.split(sims, sims_labels):
         train, test, train_lengths, test_lengths = [], [], [], []
         for i in train_indexes:
