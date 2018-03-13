@@ -14,8 +14,8 @@ data = import_mats(data_path)
 buffer_column = numpy.float32(numpy.loadtxt("buffer_column"))
 
 for name, damage, sim in data:
-    origin_order = calculate_order(name.split('_')[4], **dict_origin)
-    target_order = calculate_order(name.split('_')[4], **dict_target)
+    origin_order = calculate_damage_order(name.split('_')[4], **dict_origin)
+    target_order = calculate_damage_order(name.split('_')[4], **dict_target)
     print "Differenza ordini per {} = {}".format(name, round(target_order - origin_order, 1))
 
     temp = name.split('_')

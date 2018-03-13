@@ -12,7 +12,7 @@ def import_mats(path, orders=[]):
     for file_name in next(os.walk(path))[2]:
         sim = numpy.float32(sio.loadmat(path + file_name)["export_down"])
         damage = True if sum(sim[:, -1]) > 0 else False
-        orders.append(int(file_name.split('_')[-1][0:2]))  # estrazione ordine max da nome file
+        orders.append(int(file_name.split('_')[-1][0:2]))  # extract max order from file name
         sims.append((file_name, damage, sim))
     return sims
 
@@ -52,7 +52,7 @@ def save_fold_results(fold, confidences, labels, score):
     if prediction:
         prediction_time += '_' + str(predict_window_size / 60) + "min"
 
-    with open('/'.join([results_path, "confidenze", "confidenze"]) + prediction_time, 'a') as f:
+    with open(results_path + "confidenze" + "confidenze" + prediction_time, 'a') as f:
         f.write("Fold" + str(fold) + "\n")
         f.write(';'.join(str(x) for x in confidences) + "\n")
         f.write(';'.join(str(x) for x in labels) + "\n")
@@ -92,12 +92,10 @@ def samples_per_epoch(lengths):
     return tot
 
 
-'''
-Funzioni per conversione/visualizzazione
-'''
+'''Functions for conversion/visualization'''
 
 
-def calculate_order(damage, Nb, Db, Dp, S=1, phi=0.0):
+def calculate_damage_order(damage, Nb, Db, Dp, S=1, phi=0.0):
     Nb, Db, Dp = float(Nb), float(Db), float(Dp)
     if damage == "Outer":
         return Nb / 2 * S * (1 - Db / Dp * math.cos(phi))
@@ -156,11 +154,11 @@ def plot(sims, lenghts, pred):
         offset += l
 
 
-def plot2(sim, ordine):
+def plot2(sim, order):
     width = 5
     label = sim[:, -1]
-    indexes_to_delete = [0] + [n for n in range(ordine * 2, sim.shape[1], 1)]
-    sim = numpy.delete(sim, indexes_to_delete, axis=1)  # rimuove colonne inutili
+    indexes_to_delete = [0] + [n for n in range(order * 2, sim.shape[1], 1)]
+    sim = numpy.delete(sim, indexes_to_delete, axis=1)
     data = numpy.empty((sim.shape[0], (sim.shape[1] + 1) * width, 3), dtype=numpy.uint8)
     for x in range(sim.shape[0]):
         for y in range(sim.shape[1]):
@@ -173,6 +171,6 @@ def plot2(sim, ordine):
 
 
 if __name__ == "__main__":
-    print "Outer: {}".format(calculate_order("Outer", *sys.argv[1:]))
-    print "Inner: {}".format(calculate_order("Inner", *sys.argv[1:]))
-    print "Ball: {}".format(calculate_order("Ball", *sys.argv[1:]))
+    print "Outer: {}".format(calculate_damage_order("Outer", *sys.argv[1:]))
+    print "Inner: {}".format(calculate_damage_order("Inner", *sys.argv[1:]))
+    print "Ball: {}".format(calculate_damage_order("Ball", *sys.argv[1:]))

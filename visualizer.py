@@ -53,12 +53,12 @@ for tripla_origine, tripla_target in zip(sorted_dati_origine[0:30], sorted_dati_
 
     ordini = []
     i = 1
-    ordine_origine = calculate_order(tripla_origine[0].split('_')[4], **dict_origine)
+    ordine_origine = calculate_damage_order(tripla_origine[0].split('_')[4], **dict_origine)
     while ordine_origine * i <= 7.5:
         ordini.append(order_to_column_index(round_to_05(ordine_origine * i)))
         i += 1
-    print calculate_order(tripla_target[0].split('_')[4], **dict_target) - ordine_origine
-    modifica = int(round_to_05(calculate_order(tripla_target[0].split('_')[4], **dict_target) - ordine_origine) * 2)
+    print calculate_damage_order(tripla_target[0].split('_')[4], **dict_target) - ordine_origine
+    modifica = int(round_to_05(calculate_damage_order(tripla_target[0].split('_')[4], **dict_target) - ordine_origine) * 2)
     print modifica
     ordine_origine = order_to_column_index(round_to_05(ordine_origine))
     # print ordini, ordine_origine, modifica
