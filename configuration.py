@@ -19,3 +19,8 @@ transitory_label = 2
 batch_size = 1024
 epoch=1
 look_back = 30  # sequence length for recurrent networks
+
+
+def set_results_path():
+    global results_path
+    results_path = '/'.join(["risultati", classifier, classification, component])

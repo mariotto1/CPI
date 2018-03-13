@@ -11,7 +11,6 @@ from sklearn.model_selection import StratifiedKFold
 
 def read_input():
     (conf.classifier, conf.component, conf.classification) = sys.argv[1:4]
-
     if len(sys.argv) < 4:
         print "Usage: main.py classifier component target [prediction window size]"
     elif conf.classification == 'prediction':
@@ -21,7 +20,7 @@ def read_input():
         else:
             conf.predict_window_size = int(sys.argv[4]) * 60
             conf.prediction = True
-        conf.results_path = '/'.join(["risultati", conf.classifier, conf.classification, conf.component])
+    conf.set_results_path()
 
 
 def load_dataset():
