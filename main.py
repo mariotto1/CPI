@@ -5,18 +5,32 @@ import classifiers as clf
 import datetime as dt
 import numpy
 import preprocessing
-from configuration import *
+import configuration as conf
 from sklearn.model_selection import StratifiedKFold
-import cProfile
+
+
+def read_input():
+    (conf.classifier, conf.component, conf.classification) = sys.argv[1:4]
+
+    if len(sys.argv) < 4:
+        print "Usage: main.py classifier component target [prediction window size]"
+    elif conf.classification == 'prediction':
+        if len(sys.argv) < 5:
+            print "Prediction window size needed if predicting"
+            exit(0)
+        else:
+            conf.predict_window_size = int(sys.argv[4]) * 60
+            conf.prediction = True
+        conf.results_path = '/'.join(["risultati", conf.classifier, conf.classification, conf.component])
 
 
 def load_dataset():
-    for folder in os.listdir(path_data):
-        component_folder = path_data + folder
-        if component == 'tutti cuscinetti' or folder == component:
+    for folder in os.listdir(conf.data_path):
+        component_folder = conf.data_path + folder
+        if conf.component == 'tutti' or folder == conf.component:
             if os.path.isdir(component_folder + "/Test/"):
                 test_data.extend(utils.import_mats(component_folder + "/Test/", orders))
-                separated_test = True
+                conf.separated_test = True
             data.extend(utils.import_mats(component_folder + '/No_Danno/', orders))
         data.extend(utils.import_mats(component_folder + '/Danno/', orders))
 
@@ -29,30 +43,18 @@ def run():
     return score
 
 
-(classifier, component, classification) = sys.argv[1:4]
-
-if len(sys.argv) < 4:
-    print "Usage: main.py classifier component target [prediction window size]"
-elif classification == 'prediction':
-    if len(sys.argv) < 5:
-        print "Prediction window size needed if predicting"
-        exit(0)
-    else:
-        predict_window_size = int(sys.argv[4]) * 60
-        prediction = True
-results_path = '/'.join(["risultati", classifier, classification, component])
-
-orders, data, test_data = [], [], []  # data = list of tuples (name, damage yes/no, sim)
+read_input()
+orders, data, test_data = [], [], []  # data = list of tuples (sim_name, has_damage, sim)
 load_dataset()
 
 sims, sims_labels = preprocessing.clean(data, min(orders))
-if separated_test:
+if conf.separated_test:
     test_sims, _ = preprocessing.clean(test_data, min(orders))
 del orders, data, test_data
 
 n_fold = 1
 scores = []
-if separated_test:
+if conf.separated_test:
     train, train_lengths = utils.stack_sims(sims)
     test, test_lengths = utils.stack_sims(test_sims)
     train[:, :-1], test[:, :-1] = preprocessing.normalization(train[:, :-1], test[:, :-1])

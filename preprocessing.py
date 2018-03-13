@@ -6,7 +6,7 @@ from configuration import *
 # Remove of unnecessary orders and modify labels for multidamage and prediction
 def clean(data, min_order):
     sims, labels = [], []
-    for sim_name, sim_with_damage, sim in data:
+    for sim_name, has_damage, sim in data:
         nan_indexes = [0] + numpy.where(numpy.isnan(sim[0, :]))[0].tolist()
         delete_indexes = []
         for i, active_sensor in enumerate(active_sensors):
@@ -16,7 +16,7 @@ def clean(data, min_order):
                 delete_indexes += [n for n in range(nan_indexes[i], nan_indexes[i + 1])]
         delete_indexes += [nan_indexes[-1], sim.shape[1] - 2]
         sim = numpy.delete(sim, delete_indexes, axis=1)  # remove columns of inactive sensors
-        if sim_with_damage:
+        if has_damage:
             if prediction:
                 if 0 < sim[:, -1].tolist().count(transitory_label) < predict_window_size:
                     transitory_length = sim[:, -1].tolist().count(transitory_label)

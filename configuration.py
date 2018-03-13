@@ -1,6 +1,5 @@
 '''General config'''
-path_data = "dataset/simulato/"
-damage_types = ["Outer", "Inner", "Ball"]
+data_path = "dataset/simulato/"
 results_path = ''
 separated_test = False  # if testing set is given (i.e., no cross-validation needed)
 classifier = ''
@@ -10,6 +9,7 @@ predict_window_size = 0  # prediction windows, in seconds (0 == detection)
 prediction = False
 
 '''Simulations config'''
+damage_types = ["Outer", "Inner", "Ball"]
 active_sensors = [True, False, False]
 damage_label = 1
 transitory_label = 2
