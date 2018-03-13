@@ -4,7 +4,7 @@ import keras as kr
 import numpy
 import utils
 import preprocessing
-import configuration as conf
+from configuration import *
 
 
 def mlp(train, test):
@@ -20,7 +20,7 @@ def mlp(train, test):
     sgd = kr.optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9)
     model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
-    model.fit(train[:, :-1], kr.utils.np_utils.to_categorical(train[:, -1]), epochs=conf.epoch, batch_size=conf.batch_size,
+    model.fit(train[:, :-1], kr.utils.np_utils.to_categorical(train[:, -1]), epochs=epoch, batch_size=batch_size,
               shuffle=True)
 
     confidences = model.predict(test[:, :-1], batch_size=128)
@@ -30,7 +30,7 @@ def mlp(train, test):
 
 def lstm(train, train_lengths, test, test_lengths):
     model = kr.models.Sequential()
-    model.add(kr.layers.Bidirectional(kr.layers.LSTM(5, return_sequences=True), input_shape=(conf.look_back, train.shape[1] - 1), merge_mode='concat'))
+    model.add(kr.layers.Bidirectional(kr.layers.LSTM(5, return_sequences=True), input_shape=(look_back, train.shape[1] - 1), merge_mode='concat'))
     model.add(kr.layers.LSTM(5, return_sequences=False))
     model.add(kr.layers.Dense(32, activation='relu'))
     model.add(kr.layers.Dense(16, activation='relu'))
@@ -39,14 +39,14 @@ def lstm(train, train_lengths, test, test_lengths):
 
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    model.fit_generator(preprocessing.batch_generator(train, train_lengths, conf.look_back, conf.batch_size),
-                        steps_per_epoch=utils.samples_per_epoch(conf.look_back, train_lengths) / conf.batch_size,
-                        epochs=conf.epoch)
+    model.fit_generator(preprocessing.batch_generator(train, train_lengths),
+                        steps_per_epoch=utils.samples_per_epoch(train_lengths) / batch_size,
+                        epochs=epoch)
 
-    generator = preprocessing.batch_generator(test, test_lengths, conf.look_back, conf.batch_size)
+    generator = preprocessing.batch_generator(test, test_lengths)
     test_labels = []
     confidences = []
-    for x in range(utils.samples_per_epoch(conf.look_back, test_lengths) / conf.batch_size):
+    for x in range(utils.samples_per_epoch(test_lengths) / batch_size):
         batch = next(generator)
         confidences.extend(model.predict_on_batch(batch[0]))
         test_labels.extend(numpy.argmax(x) for x in batch[1])
@@ -70,9 +70,9 @@ def RF(train, test):
 
 
 def classification(train, test, train_lengths, test_lengths, n_fold):
-    if conf.classifier == 'mlp':
+    if classifier == 'mlp':
         confidences, predictions, test_labels = mlp(train, test)
-    elif conf.classifier == 'lstm':
+    elif classifier == 'lstm':
         confidences, predictions, test_labels = lstm(train, train_lengths, test, test_lengths)
     score = utils.calculate_score(predictions, test_labels)
     utils.save_fold_results(n_fold, confidences, test_labels, score)

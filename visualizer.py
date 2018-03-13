@@ -43,8 +43,8 @@ path_data_target = path + folder_target
 
 dati_origine = []  # lista di triple (nome,danno,sim)
 dati_target = []
-dati_origine.extend(import_mat(path_data_origine))
-dati_target.extend(import_mat(path_data_target))
+dati_origine.extend(import_mats(path_data_origine))
+dati_target.extend(import_mats(path_data_target))
 sorted_dati_origine = sorted(dati_origine, key=lambda tup: tup[0])
 sorted_dati_target = sorted(dati_target, key=lambda tup: tup[0])
 for tripla_origine, tripla_target in zip(sorted_dati_origine[0:30], sorted_dati_target[0:30]):
@@ -55,12 +55,12 @@ for tripla_origine, tripla_target in zip(sorted_dati_origine[0:30], sorted_dati_
     i = 1
     ordine_origine = calculate_order(tripla_origine[0].split('_')[4], **dict_origine)
     while ordine_origine * i <= 7.5:
-        ordini.append(ordine_a_colonna(round_to_05(ordine_origine * i)))
+        ordini.append(order_to_column_index(round_to_05(ordine_origine * i)))
         i += 1
     print calculate_order(tripla_target[0].split('_')[4], **dict_target) - ordine_origine
     modifica = int(round_to_05(calculate_order(tripla_target[0].split('_')[4], **dict_target) - ordine_origine) * 2)
     print modifica
-    ordine_origine = ordine_a_colonna(round_to_05(ordine_origine))
+    ordine_origine = order_to_column_index(round_to_05(ordine_origine))
     # print ordini, ordine_origine, modifica
 
     label = tripla_origine[2][:, -1]
