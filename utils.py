@@ -4,7 +4,7 @@ import os
 import sys
 import scipy.misc as smp
 import math
-from configuration import *
+import configuration as conf
 
 
 def import_mats(path, orders=[]):
@@ -17,13 +17,9 @@ def import_mats(path, orders=[]):
     return sims
 
 
-def stack_sims(sims):
-    return numpy.concatenate(sims, axis=0), [len(sim) for sim in sims]
-
-
-def calculate_score(preds, labels):
+def calculate_fold_score(preds, labels):
     score = {'FP': 0, 'FN': 0, 'Corretti': 0, 'Danno sbagliato': 0}
-    for damage in damage_types:
+    for damage in conf.damage_types:
         score['Errori ' + damage] = 0
     for pred, label in zip(preds, labels):
         if pred == 0 and label > 0:
@@ -34,49 +30,44 @@ def calculate_score(preds, labels):
             score['Corretti'] += 1
         else:
             score['Danno sbagliato'] += 1
-            score['Errori ' + damage_types[label - 1]] += 1
+            score['Errori ' + conf.damage_types[label - 1]] += 1
     score['Negativi'] = labels.count(0)
     score['Positivi'] = len(labels) - score['Negativi']
-    for damage in damage_types:
-        score['Danno su ' + damage] = labels.count(damage_types.index(damage) + 1)
-    score['Accuratezza'] = float(score['Corretti']) / (score['Negativi'] + score['Positivi']) * 100
-    score['FPR'] = float(score['FP']) / score['Negativi'] * 100
-    score['FNR'] = float(score['FN']) / score['Positivi'] * 100
+    for damage in conf.damage_types:
+        score['Danno su ' + damage] = labels.count(conf.damage_types.index(damage) + 1)
+    # score['Accuratezza'] = float(score['Corretti']) / (score['Negativi'] + score['Positivi']) * 100
+    # score['FPR'] = float(score['FP']) / score['Negativi'] * 100
+    # score['FNR'] = float(score['FN']) / score['Positivi'] * 100
     return score
 
 
-def save_fold_results(fold, confidences, labels, score):
-    print "Saving fold results..."
-
-    prediction_time = ''
-    if prediction:
-        prediction_time += '_' + str(predict_window_size / 60) + "min"
-
-    with open(results_path + "confidenze" + "confidenze" + prediction_time, 'a') as f:
-        f.write("Fold" + str(fold) + "\n")
-        f.write(';'.join(str(x) for x in confidences) + "\n")
-        f.write(';'.join(str(x) for x in labels) + "\n")
-
-    with open(results_path + '/score_per_fold' + prediction_time, 'a') as f:
-        f.write("Fold" + str(fold) + "\n")
-        f.write(';'.join([i + "=" + str(score[i]) for i in sorted(score)]) + "\n")
-
-
-def save_global_score(scores):
-    file_name = component + '_risultati_' + classifier
-    if prediction:
-        file_name += '_' + str(predict_window_size / 60) + "min"
-
+def save_results(results):
+    print "Saving results..."
     global_score = {'FP': 0, 'FN': 0, 'Corretti': 0, 'Danno sbagliato': 0, 'Positivi': 0, 'Negativi': 0}
-    for score in scores:
-        for key in global_score:
-            global_score[key] += score[key]
+    prediction_time = '' if not conf.prediction else '_' + str(conf.predict_window_size / 60) + "min"
+    scores = []
+    with open(conf.results_path + "confidenze/" + "confidenze" + prediction_time, 'w') as f:
+        for i, (confidences, predictions, labels) in enumerate(results):
+            f.write("Fold " + str(i + 1) + "\n")
+            for confidence in confidences[:-1]:
+                f.write(str(confidence) + ';')
+            f.write(str(confidences[-1]) + '\n')
+            f.write(';'.join(str(x) for x in labels) + "\n")
+            fold_score = calculate_fold_score(predictions, labels)
+            scores.append(fold_score)
+            for key in global_score:
+                global_score[key] += fold_score[key]
     global_score['Accuratezza'] = float(global_score['Corretti']) / (global_score['Negativi'] + global_score['Positivi']) * 100
     global_score['FPR'] = float(global_score['FP']) / global_score['Negativi'] * 100
     global_score['FNR'] = float(global_score['FN']) / global_score['Positivi'] * 100
     global_score['Rateo Danno sbagliato'] = float(global_score['Danno sbagliato']) / global_score['Positivi'] * 100
 
-    with open(results_path + file_name + ".txt", 'a') as f:
+    with open(conf.results_path + 'score_per_fold' + prediction_time, 'w') as f:
+        for i, score in enumerate(scores):
+            f.write("Fold " + str(i + 1) + "\n")
+            f.write(';'.join([i + "=" + str(score[i]) for i in sorted(score)]) + "\n")
+    file_name = conf.component + '_risultati_' + conf.classifier + prediction_time
+    with open(conf.results_path + '../' + file_name + ".txt", 'a') as f:
         f.write("Accuratezza: {:.1f}% ({} predizioni corrette su {})\n".format(global_score['Accuratezza'], global_score['Corretti'],
                                                                                global_score['Negativi'] + global_score['Positivi']))
         f.write("FPR: {:.1f}% ({} falsi positivi su {} negativi)\n".format(global_score['FPR'], global_score['FP'], global_score['Negativi']))
@@ -88,7 +79,7 @@ def save_global_score(scores):
 def samples_per_epoch(lengths):
     tot = 0
     for l in lengths:
-        tot += l - look_back + 1
+        tot += l - conf.look_back + 1
     return tot
 
 

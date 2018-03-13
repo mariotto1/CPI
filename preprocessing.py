@@ -1,7 +1,7 @@
 import numpy
 from sklearn import preprocessing
 import keras
-from configuration import *
+import configuration as conf
 
 # Remove of unnecessary orders and modify labels for multidamage and prediction
 def clean(data, min_order):
@@ -9,7 +9,7 @@ def clean(data, min_order):
     for sim_name, has_damage, sim in data:
         nan_indexes = [0] + numpy.where(numpy.isnan(sim[0, :]))[0].tolist()
         delete_indexes = []
-        for i, active_sensor in enumerate(active_sensors):
+        for i, active_sensor in enumerate(conf.active_sensors):
             if active_sensor:
                 delete_indexes += [nan_indexes[i]] + [n for n in range(nan_indexes[i] + min_order * 2, nan_indexes[i + 1])]
             else:
@@ -17,16 +17,16 @@ def clean(data, min_order):
         delete_indexes += [nan_indexes[-1], sim.shape[1] - 2]
         sim = numpy.delete(sim, delete_indexes, axis=1)  # remove columns of inactive sensors
         if has_damage:
-            if prediction:
-                if 0 < sim[:, -1].tolist().count(transitory_label) < predict_window_size:
-                    transitory_length = sim[:, -1].tolist().count(transitory_label)
+            if conf.prediction:
+                if 0 < sim[:, -1].tolist().count(conf.transitory_label) < conf.predict_window_size:
+                    transitory_length = sim[:, -1].tolist().count(conf.transitory_label)
                 else:
-                    transitory_length = predict_window_size
-                sim = sim[sim[:, -1] != damage_label]  # remove row labelled as damage
+                    transitory_length = conf.predict_window_size
+                sim = sim[sim[:, -1] != conf.damage_label]  # remove row labelled as damage
                 sim[:, -1] = [0] * (sim.shape[0] - transitory_length) + [1] * transitory_length
-            elif not prediction and transitory_label in sim[:, -1]:
-                sim[:, -1] = [0] * (sim.shape[0] - sim[:, -1].tolist().count(damage_label)) + [1] * sim[:, -1].tolist().count(damage_label)
-            for i, damage in enumerate(damage_types):
+            elif not conf.prediction and conf.transitory_label in sim[:, -1]:
+                sim[:, -1] = [0] * (sim.shape[0] - sim[:, -1].tolist().count(conf.damage_label)) + [1] * sim[:, -1].tolist().count(conf.damage_label)
+            for i, damage in enumerate(conf.damage_types):
                 if damage in sim_name:
                     sim[:, -1] *= i + 1
                     labels.append(i + 1)
@@ -38,26 +38,27 @@ def clean(data, min_order):
 
 
 def normalization(train, test):
+    print "Dataset normalization..."
     scaler = preprocessing.StandardScaler()
     return scaler.fit_transform(train), scaler.transform(test)
 
 
 def batch_generator(examples, lengths):
-    num_classes = len(damage_types) + 1
+    num_classes = len(conf.damage_types) + 1
     sim_offset = 0
     global_offset = 0
     lengths_index = 0
     while True:
         batch_labels = []
         batch_data = []
-        for i in range(batch_size):
+        for i in range(conf.batch_size):
             offset = global_offset + sim_offset
-            batch_data.append(examples[offset:offset + look_back, :-1])
+            batch_data.append(examples[offset:offset + conf.look_back, :-1])
             batch_labels.append(keras.utils.np_utils.to_categorical(
-                max(examples[offset:offset + look_back, -1]),
+                max(examples[offset:offset + conf.look_back, -1]),
                 num_classes=num_classes))
             sim_offset += 1
-            if sim_offset + look_back >= lengths[lengths_index]:
+            if sim_offset + conf.look_back >= lengths[lengths_index]:
                 global_offset += lengths[lengths_index]
                 lengths_index += 1
                 sim_offset = 0

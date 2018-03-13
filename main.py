@@ -10,10 +10,11 @@ from sklearn.model_selection import StratifiedKFold
 
 
 def read_input():
-    (conf.classifier, conf.component, conf.classification) = sys.argv[1:4]
     if len(sys.argv) < 4:
         print "Usage: main.py classifier component target [prediction window size]"
-    elif conf.classification == 'prediction':
+        exit(0)
+    (conf.classifier, conf.component, conf.classification) = sys.argv[1:4]
+    if conf.classification == 'prediction':
         if len(sys.argv) < 5:
             print "Prediction window size needed if predicting"
             exit(0)
@@ -25,8 +26,9 @@ def read_input():
 
 def load_dataset():
     for folder in os.listdir(conf.data_path):
+        print "Loading {}...".format(folder)
         component_folder = conf.data_path + folder
-        if conf.component == 'tutti' or folder == conf.component:
+        if conf.component == 'tutti cuscinetti' or folder == conf.component:
             if os.path.isdir(component_folder + "/Test/"):
                 test_data.extend(utils.import_mats(component_folder + "/Test/", orders))
                 conf.separated_test = True
@@ -37,9 +39,8 @@ def load_dataset():
 def run():
     time = dt.datetime.now()
     print "Fold {} start  {:%H:%M:%S %d-%m-%Y}".format(n_fold, time)
-    score = clf.classification(train, test, train_lengths, test_lengths, n_fold)
+    results.append(clf.classification(train, test, train_lengths, test_lengths))
     print "Fold {} end  {:%H:%M:%S %d-%m-%Y}".format(n_fold, dt.datetime.now())
-    return score
 
 
 read_input()
@@ -51,13 +52,13 @@ if conf.separated_test:
     test_sims, _ = preprocessing.clean(test_data, min(orders))
 del orders, data, test_data
 
+results = []
 n_fold = 1
-scores = []
 if conf.separated_test:
-    train, train_lengths = utils.stack_sims(sims)
-    test, test_lengths = utils.stack_sims(test_sims)
+    train, train_lengths = numpy.concatenate(sims, axis=0), [len(sim) for sim in sims]
+    test, test_lengths = numpy.concatenate(test_sims, axis=0), [len(sim) for sim in test_sims]
     train[:, :-1], test[:, :-1] = preprocessing.normalization(train[:, :-1], test[:, :-1])
-    scores.append(run())
+    run()
 else:
     skf = StratifiedKFold(n_splits=5)  # number of folds
     for train_indexes, test_indexes in skf.split(sims, sims_labels):
@@ -70,7 +71,7 @@ else:
             test_lengths.append(len(sims[i]))
         train = numpy.array(train)
         test = numpy.array(test)
-        preprocessing.normalization(train, test)
-        scores.append(run())
+        train[:, :-1], test[:, :-1] = preprocessing.normalization(train[:, :-1], test[:, :-1])
+        run()
         n_fold += 1
-utils.save_global_score(scores)
+utils.save_results(results)

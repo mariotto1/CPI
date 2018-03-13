@@ -1,3 +1,5 @@
+import keras
+
 '''General config'''
 data_path = "dataset/simulato/"
 results_path = ''
@@ -17,10 +19,15 @@ transitory_label = 2
 
 '''Neural networks config'''
 batch_size = 1024
-epoch=1
+epochs = 1
 look_back = 30  # sequence length for recurrent networks
+optimizers = {
+    'sgd': keras.optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9),
+    'adam': 'adam'
+}
+optimizer = optimizers['adam']
 
 
 def set_results_path():
     global results_path
-    results_path = '/'.join(["risultati", classifier, classification, component])
+    results_path = '/'.join(["risultati", classifier, classification, component, ''])
