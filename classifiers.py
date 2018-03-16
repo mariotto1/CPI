@@ -6,22 +6,29 @@ import utils
 import preprocessing
 import configuration as conf
 
+nn_layers = {
+    'lstm': kr.layers.LSTM,
+    'gru': kr.layers.GRU,
+    'dense': kr.layers.Dense
+}
+optimizers = {
+    'sgd': kr.optimizers.SGD,
+    'adam': kr.optimizers.Adam
+}
 
 def mlp(train, test):
     model = kr.models.Sequential()
     # model.add(kr.layers.Conv1D(2,5,strides=1, padding='valid',input_shape=(train.shape[1]-1)))
     model.add(kr.layers.InputLayer(input_shape=(train.shape[1] - 1,)))
-    model.add(kr.layers.Dense(units=128, activation='relu'))
-    model.add(kr.layers.Dense(units=64, activation='relu'))
-    model.add(kr.layers.Dense(units=32, activation='relu'))
-    model.add(kr.layers.Dense(units=16, activation='relu'))
-    model.add(kr.layers.Dense(units=len(conf.damage_types) + 1))
-    model.add(kr.layers.Activation('softmax'))
+    for layer in conf.mlp_layers:
+        model.add(nn_layers[layer['type']](**layer['params']))
+    model.add(kr.layers.Dense(units=len(conf.damage_types) + 1, activation='softmax'))
 
-    model.compile(loss='categorical_crossentropy', optimizer=conf.optimizer, metrics=['accuracy'])
+    model.compile(loss='categorical_crossentropy', metrics=['accuracy'],
+                  optimizer=optimizers[conf.optimizer['type']](**conf.optimizer['params']))
 
-    model.fit(train[:, :-1], kr.utils.np_utils.to_categorical(train[:, -1]), epochs=conf.epochs, batch_size=conf.batch_size,
-              shuffle=True)
+    model.fit(train[:, :-1], kr.utils.np_utils.to_categorical(train[:, -1]), epochs=conf.epochs,
+              batch_size=conf.batch_size, shuffle=True)
 
     print "Evaluating testing set..."
     confidences = model.predict(test[:, :-1])
@@ -32,18 +39,18 @@ def mlp(train, test):
 def lstm(train, train_lengths, test, test_lengths):
     model = kr.models.Sequential()
     model.add(kr.layers.InputLayer(input_shape=(conf.look_back, train.shape[1] - 1)))
-    model.add(kr.layers.Bidirectional(kr.layers.LSTM(5, return_sequences=True), merge_mode='concat'))
-    model.add(kr.layers.LSTM(5, return_sequences=False))
-    model.add(kr.layers.Dense(32, activation='relu'))
-    model.add(kr.layers.Dense(16, activation='relu'))
-    model.add(kr.layers.Dense(units=len(conf.damage_types) + 1))
-    model.add(kr.layers.Activation('softmax'))
+    for layer in conf.rnn_layers:
+        if 'bidir' in layer and layer['bidir'] == True:
+            model.add(kr.layers.Bidirectional(nn_layers[layer['type']](**layer['params']), **layer['bidir_param']))
+        else:
+            model.add(layer[0](**layer[1]))
+    model.add(kr.layers.Dense(units=len(conf.damage_types) + 1, activation='softmax'))
 
-    model.compile(loss='categorical_crossentropy', optimizer=conf.optimizer, metrics=['accuracy'])
+    model.compile(loss='categorical_crossentropy', metrics=['accuracy'],
+                  optimizer=optimizers[conf.optimizer['type']](**conf.optimizer['params']))
 
-    model.fit_generator(preprocessing.batch_generator(train, train_lengths),
-                        steps_per_epoch=utils.samples_per_epoch(train_lengths) / conf.batch_size,
-                        epochs=conf.epochs)
+    model.fit_generator(preprocessing.batch_generator(train, train_lengths), epochs=conf.epochs,
+                        steps_per_epoch=utils.samples_per_epoch(train_lengths) / conf.batch_size)
 
     generator = preprocessing.batch_generator(test, test_lengths)
     test_labels = []

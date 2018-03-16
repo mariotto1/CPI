@@ -19,13 +19,21 @@ transitory_label = 2
 
 '''Neural networks config'''
 batch_size = 1024
-epochs = 1
+epochs = 3
 look_back = 30  # sequence length for recurrent networks
-optimizers = {
-    'sgd': keras.optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9),
-    'adam': 'adam'
-}
-optimizer = optimizers['adam']
+mlp_layers = [
+    {'type': 'dense', 'params': {'units': 128, 'activation': 'relu'}},
+    {'type': 'dense', 'params': {'units': 64, 'activation': 'relu'}},
+    {'type': 'dense', 'params': {'units': 32, 'activation': 'relu'}},
+    {'type': 'dense', 'params': {'units': 16, 'activation': 'relu'}}
+]
+rnn_layers = [
+    {'type': 'lstm', 'params': {'units': 5, 'return_sequences': True}, 'bidir': True, 'bidir_param': {'merge_mode': 'concat'}},
+    {'type': 'lstm', 'params': {'units': 5, 'return_sequences': False}, 'bidir': False},
+    {'type': 'dense', 'params': {'units': 32, 'activation': 'relu'}},
+    {'type': 'dense', 'params': {'units': 16, 'activation': 'relu'}}
+]
+optimizer = {'type': 'adam', 'params': {}}
 
 
 def set_results_path():

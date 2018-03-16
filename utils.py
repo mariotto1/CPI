@@ -67,13 +67,28 @@ def save_results(results):
             f.write("Fold " + str(i + 1) + "\n")
             f.write(';'.join([i + "=" + str(score[i]) for i in sorted(score)]) + "\n")
     file_name = conf.component + '_risultati_' + conf.classifier + prediction_time
+    string = "Accuratezza: {:.1f}% ({} predizioni corrette su {})\n".format(
+        global_score['Accuratezza'], global_score['Corretti'], global_score['Negativi'] + global_score['Positivi'])
+    string += "FPR: {:.1f}% ({} falsi positivi su {} negativi)\n".format(
+        global_score['FPR'], global_score['FP'], global_score['Negativi'])
+    string += "FNR: {:.1f}% ({} falsi negativi su {} positivi)\n".format(
+        global_score['FNR'], global_score['FN'], global_score['Positivi'])
+    string += "Tipologia di danno sbagliata: {:.1f}% ({} errori su {} positivi)\n".format(
+        global_score['Rateo Danno sbagliato'], global_score['Danno sbagliato'], global_score['Positivi'])
+    string += "Batch: {}, Epoche: {}, Look_back: {}, Ottimizzatore: {}, Strati: ".format(
+        conf.batch_size, conf.epochs, conf.look_back, conf.optimizer['type'])
+    if conf.classifier == 'mlp':
+        for layer in conf.mlp_layers:
+            string += "{} ({}), ".format(layer['type'], layer['params']['units'])
+    elif conf.classifier == 'lstm':
+        for layer in conf.rnn_layers:
+            if 'bidir' in layer and layer['bidir']:
+                string += "{} bidirectional ({}), ".format(layer['type'], layer['params']['units'])
+            else:
+                string += "{} ({}), ".format(layer['type'], layer['params']['units'])
+    string = string[:-2] + '\n\n'
     with open(conf.results_path + '../' + file_name + ".txt", 'a') as f:
-        f.write("Accuratezza: {:.1f}% ({} predizioni corrette su {})\n".format(global_score['Accuratezza'], global_score['Corretti'],
-                                                                               global_score['Negativi'] + global_score['Positivi']))
-        f.write("FPR: {:.1f}% ({} falsi positivi su {} negativi)\n".format(global_score['FPR'], global_score['FP'], global_score['Negativi']))
-        f.write("FNR: {:.1f}% ({} falsi negativi su {} positivi)\n".format(global_score['FNR'], global_score['FN'], global_score['Positivi']))
-        f.write("Tipologia di danno sbagliata: {:.1f}% ({} errori su {} positivi)\n".format(global_score['Rateo Danno sbagliato'],
-                                                                                            global_score['Danno sbagliato'], global_score['Positivi']))
+        f.write(string)
 
 
 def samples_per_epoch(lengths):
