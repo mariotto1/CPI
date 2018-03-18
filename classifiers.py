@@ -43,7 +43,7 @@ def lstm(train, train_lengths, test, test_lengths):
         if 'bidir' in layer and layer['bidir'] == True:
             model.add(kr.layers.Bidirectional(nn_layers[layer['type']](**layer['params']), **layer['bidir_param']))
         else:
-            model.add(layer[0](**layer[1]))
+            model.add(nn_layers[layer['type']](**layer['params']))
     model.add(kr.layers.Dense(units=len(conf.damage_types) + 1, activation='softmax'))
 
     model.compile(loss='categorical_crossentropy', metrics=['accuracy'],
